@@ -1,0 +1,42 @@
+{
+  "name": "slate-ot-type",
+  "version": "1.0.0",
+  "description": "",
+  "main": "lib/SlateType.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "babel src -d lib",
+    "prepublish": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/minhhien1996/slate-ot-type.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/minhhien1996/slate-ot-type/issues"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.2.3",
+    "@babel/core": "^7.3.3",
+    "@babel/plugin-proposal-function-bind": "^7.2.0",
+    "@babel/plugin-syntax-dynamic-import": "^7.2.0",
+    "@babel/plugin-transform-regenerator": "^7.0.0",
+    "@babel/plugin-transform-runtime": "^7.2.0",
+    "@babel/preset-env": "^7.2.3",
+    "@babel/preset-flow": "^7.0.0",
+    "@babel/register": "^7.0.0",
+    "@babel/runtime-corejs2": "^7.2.0",
+    "eslint": "6.1.0",
+    "eslint-config-airbnb-base": "14.0.0",
+    "eslint-plugin-import": "^2.18.2",
+    "nodemon": "^1.18.9"
+  },
+  "homepage": "https://github.com/minhhien1996/slate-ot-type#readme",
+  "dependencies": {
+    "immutable": "^4.0.0-rc.12",
+    "slate": "^0.47.8"
+  }
+}
