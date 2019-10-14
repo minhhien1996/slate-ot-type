@@ -1,8 +1,28 @@
 import { Selector } from './Selector';
-import { normalizeSnapShot, isArray } from './Utilitites';
+import { isArray } from './Utilitites';
 
 const { Value, Operation } = require('slate');
 const { isImmutable } = require('immutable');
+
+function serializedApply(snapshot, op) {
+  console.log('serializedApply', snapshot);
+  let value = Value.create(snapshot);
+  op.forEach((o) => {
+    const operation = Operation.create(o);
+    value = operation.apply(value);
+  });
+  return value.toJS();
+}
+
+function deserializedApply(snapshot, op) {
+  console.log('deserializedApply', snapshot);
+  let value = snapshot;
+  op.forEach((o) => {
+    const operation = Operation.create(o);
+    value = operation.apply(value);
+  });
+  return value;
+}
 
 const slateType = {
   Value,
@@ -10,45 +30,53 @@ const slateType = {
   type: {
     name: 'slate-ot-type',
     uri: 'http://sharejs.org/types/slate-ot-type',
-    create(init) {
-      return Value.create(init);
+    create(data) {
+      console.log('create', data);
+      return data;
+    },
+    createDeserialized(data) {
+      console.log('createDeserialized', data);
+      if (isImmutable(data)) {
+        return data;
+      }
+      if (data == null) {
+        return null;
+      }
+      return Value.create(data);
     },
     apply(snapshot, op) {
-      let value = Value.create(snapshot);
-      op.forEach((o) => {
-        const operation = Operation.create(o);
-        value = operation.apply(value);
-      });
-      value = Value.create(normalizeSnapShot(value));
-      return value;
+      if (isImmutable(snapshot)) {
+        return deserializedApply(snapshot, op);
+      }
+      return serializedApply(snapshot, op);
     },
     transform(op1, op2, side) {
       op1 = op1.map((o) => Operation.create(o));
       op2 = op2.map((o) => Operation.create(o));
       return slateType.transformOpLists(op1, op2, side);
     },
-    serialize(snapshot) {
-      if (isImmutable(snapshot)) {
-        return normalizeSnapShot(snapshot.toJS());
+    serialize(value) {
+      if (!isImmutable(value)) {
+        return value;
       }
-      return normalizeSnapShot(snapshot);
+      return value.toJS();
     },
     deserialize(data) {
-      return Value.fromJS(data);
+      return Value.create(data);
     },
     normalize(op) {
       return isArray(op) ? op : [op];
     },
     /**
-         * TODO:
-         *      compose operations to send them out together, at least compose for text
-         *      which is the most common usage of text editor
-         * @param {Operation} op1
-         * @param {Operation} op2
-         * compose: function (op1, op2) {
+     * TODO:
+     *      compose operations to send them out together, at least compose for text
+     *      which is the most common usage of text editor
+     * @param {Operation} op1
+     * @param {Operation} op2
+     * compose: function (op1, op2) {
 
-            }
-         */
+      }
+     */
   },
   transformOpLists(op1, op2, side) {
     let transformedOps = [];
