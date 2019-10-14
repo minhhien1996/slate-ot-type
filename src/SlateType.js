@@ -11,9 +11,6 @@ const slateType = {
     name: 'slate-ot-type',
     uri: 'http://sharejs.org/types/slate-ot-type',
     create(init) {
-      console.log(init);
-      console.log('called create in SlateType');
-      console.log(JSON.parse(JSON.stringify(Value.create(init).toJSON())));
       return Value.create(init);
     },
     apply(snapshot, op) {
@@ -32,12 +29,12 @@ const slateType = {
     },
     serialize(snapshot) {
       if (isImmutable(snapshot)) {
-        return normalizeSnapShot(snapshot.toJSON());
+        return normalizeSnapShot(snapshot.toJS());
       }
       return normalizeSnapShot(snapshot);
     },
     deserialize(data) {
-      return Value.fromJSON(data);
+      return Value.fromJS(data);
     },
     normalize(op) {
       return isArray(op) ? op : [op];
