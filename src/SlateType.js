@@ -15,7 +15,6 @@ function serializedApply(snapshot, op) {
 }
 
 function deserializedApply(snapshot, op) {
-  console.log('deserializedApply', snapshot);
   let value = snapshot;
   op.forEach((o) => {
     const operation = Operation.create(o);
@@ -31,11 +30,9 @@ const slateType = {
     name: 'slate-ot-type',
     uri: 'http://sharejs.org/types/slate-ot-type',
     create(data) {
-      console.log('create', data);
       return data;
     },
     createDeserialized(data) {
-      console.log('createDeserialized', data);
       if (isImmutable(data)) {
         return data;
       }
