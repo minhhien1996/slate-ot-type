@@ -5,7 +5,6 @@ const { Value, Operation } = require('slate');
 const { isImmutable } = require('immutable');
 
 function serializedApply(snapshot, op) {
-  console.log('serializedApply', snapshot);
   let value = Value.create(snapshot);
   op.forEach((o) => {
     const operation = Operation.create(o);
@@ -14,8 +13,8 @@ function serializedApply(snapshot, op) {
   return value.toJS();
 }
 
-function deserializedApply(snapshot, op) {
-  let value = snapshot;
+function deserializedApply(oldValue, op) {
+  let value = oldValue;
   op.forEach((o) => {
     const operation = Operation.create(o);
     value = operation.apply(value);
@@ -48,8 +47,6 @@ const slateType = {
       return serializedApply(snapshot, op);
     },
     transform(op1, op2, side) {
-      op1 = op1.map((o) => Operation.create(o));
-      op2 = op2.map((o) => Operation.create(o));
       return slateType.transformOpLists(op1, op2, side);
     },
     serialize(value) {
@@ -61,8 +58,9 @@ const slateType = {
     deserialize(data) {
       return Value.create(data);
     },
-    normalize(op) {
-      return isArray(op) ? op : [op];
+    normalize(singleOrListOp) {
+      const opList = isArray(singleOrListOp) ? singleOrListOp : [singleOrListOp];
+      return opList.map((o) => Operation.create(o));
     },
     /**
      * TODO:
