@@ -111,6 +111,7 @@ const slateType = {
       return Value.create(data);
     },
     normalize(singleOrListOp) {
+      logOps('normalize', singleOrListOp);
       const opList = isArray(singleOrListOp) ? singleOrListOp : [singleOrListOp];
       return opList.map((o) => Operation.create(o));
     },
