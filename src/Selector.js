@@ -241,6 +241,7 @@ const Selector = {
     } else if (op1.type === OperationTypes.SET_NODE) {
       switch (op2.type) {
         case OperationTypes.INSERT_TEXT:
+          return Transform.transformSetNodeInsText(op1, op2, side);
         case OperationTypes.REMOVE_TEXT:
         case OperationTypes.ADD_MARK:
         case OperationTypes.SET_MARK:
@@ -261,6 +262,7 @@ const Selector = {
         case OperationTypes.MERGE_NODE:
           return Transform.transformSplitNodeMergeNode(op1, op2, side);
         case OperationTypes.INSERT_TEXT:
+          return Transform.transformSplitNodeInsText(op1, op2, side);
         case OperationTypes.REMOVE_TEXT:
         case OperationTypes.ADD_MARK:
         case OperationTypes.SET_MARK:

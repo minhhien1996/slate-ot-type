@@ -559,6 +559,57 @@ const Transform = {
    */
   transformMergeNodeSplitNode: (op1, op2, side) => op1,
 
+  /**
+  * [insert_text, split_node] transformation.
+  */
+  transformInsTextSplitNode: (op1, op2, side) => {
+    console.log('transformInsTextSplitNode');
+    return op1;
+  },
+
+  /**
+  * [split_node, insert_text] transformation.
+  */
+  transformSplitNodeInsText: (op1, op2, side) => {
+    const pathCompare = PathUtils.compare(op1.get('path'), op2.get('path'));
+    console.log('transformSplitNodeInsText', pathCompare);
+    if (pathCompare === 0) {
+      const op1StartPoint = op1.get('position');
+      const op2StartPoint = op2.get('offset');
+      const op2Len = op2.get('text').length;
+      console.log('op1StartPoint', op1StartPoint, 'op2StartPoint', op2StartPoint, 'op2 text length', op2Len);
+      if (op1StartPoint >= op2StartPoint) {
+        return Operation.create({
+          object: 'operation',
+          type: 'split_node',
+          path: op1.get('path'),
+          position: op1StartPoint + op2Len,
+          properties: op1.get('properties'),
+          target: op1.get('target'),
+          data: op1.get('data'),
+        });
+      }
+    }
+
+    return op1;
+  },
+
+  /**
+ * [insert_text, set_node] transformation.
+ */
+  transformInsTextSetNode: (op1, op2, side) => {
+    console.log('transformInsTextSetNode');
+    return op1;
+  },
+
+  /**
+  * [set_node, insert_text] transformation.
+  */
+  transformSetNodeInsText: (op1, op2, side) => {
+    console.log('transformSetNodeInsText');
+    return op1;
+  },
+
   //   insert_text: ['path', 'offset', 'text', 'marks', 'data'],
   //   remove_text: ['path', 'offset', 'text', 'marks', 'data'],
 

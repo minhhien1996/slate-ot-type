@@ -22,6 +22,54 @@ function deserializedApply(oldValue, op) {
   return value;
 }
 
+const toJSON = (op) => {
+  if (op instanceof Operation) {
+    return op.toJS();
+  }
+  return op;
+};
+
+const logOps = (message = '', op) => {
+  if (isArray(op)) {
+    console.log(message, op.map(toJSON));
+    return;
+  }
+  console.log(message, toJSON(op));
+};
+
+const transformOpLists = (op1, op2, side) => {
+  let transformedOps = [];
+  logOps('transformOpLists op1', op1);
+  logOps('transformOpLists op2', op2);
+  op1.forEach((op, i) => {
+    let leftOp = op instanceof Operation ? op : Operation.create(op);
+    logOps(`Left ops at step ${i}`, leftOp);
+    // eslint-disable-next-line
+    for (let j = 0; j < op2.length; j++) {
+      const rightOp = op2[j] instanceof Operation ? op2[j] : Operation.create(op2[j]);
+      leftOp = Selector.transform(leftOp, rightOp, side);
+      logOps('transform result', leftOp);
+      if (isArray(leftOp)) {
+        if (leftOp.length > 1) {
+          leftOp = transformOpLists(leftOp, op2.slice(j), side);
+          break;
+        } else {
+          // eslint-disable-next-line prefer-destructuring
+          leftOp = leftOp[0];
+        }
+      }
+    }
+
+    transformedOps = isArray(leftOp)
+      ? [...transformedOps, ...leftOp]
+      : [...transformedOps, leftOp];
+
+    logOps(`transformedOps ops at step ${i}`, transformedOps);
+  });
+
+  return transformedOps;
+};
+
 const slateType = {
   Value,
   Operation,
@@ -41,13 +89,17 @@ const slateType = {
       return Value.create(data);
     },
     apply(snapshot, op) {
+      logOps('apply ops', op);
       if (isImmutable(snapshot)) {
         return deserializedApply(snapshot, op);
       }
       return serializedApply(snapshot, op);
     },
     transform(op1, op2, side) {
-      return slateType.transformOpLists(op1, op2, side);
+      console.log('will transform ops', side);
+      logOps(op1);
+      logOps(op2);
+      return transformOpLists(op1, op2, side);
     },
     serialize(value) {
       if (!isImmutable(value)) {
@@ -73,26 +125,7 @@ const slateType = {
       }
      */
   },
-  transformOpLists(op1, op2, side) {
-    let transformedOps = [];
-    for (let i = 0; i < op1.length; i += 1) {
-      let leftOp = op1[i];
-      for (let j = 0; j < op2.length; j += 1) {
-        const rightOp = op2[j];
-        leftOp = Selector.transform(leftOp, rightOp, side);
-        if (isArray(leftOp) && leftOp.length > 1) {
-          leftOp = slateType.transformOpLists(leftOp, op2.slice(j), side);
-          break;
-        }
-      }
-
-      transformedOps = isArray(leftOp)
-        ? [...transformedOps, ...leftOp]
-        : [...transformedOps, leftOp];
-    }
-
-    return transformedOps;
-  },
+  transformOpLists,
 };
 
 export default slateType;
