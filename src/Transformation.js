@@ -593,7 +593,26 @@ const Transform = {
   * [insert_text, split_node] transformation.
   */
   transformInsTextSplitNode: (op1, op2, side) => {
-    console.log('transformInsTextSplitNode');
+    const pathCompare = PathUtils.compare(op1.get('path'), op2.get('path'));
+    console.log('transformInsTextSplitNode', pathCompare);
+    if (pathCompare === 0) {
+      const op1StartPoint = op1.get('offset');
+      const op2StartPoint = op2.get('position');
+      if (op1StartPoint >= op2StartPoint) {
+        // TODO: this transformation here is for only nested split_node for new line
+        const [nodeIdx, ...rest] = op1.get('path').toJS();
+        const newPath = [nodeIdx + 1, ...rest];
+        return Operation.create({
+          object: 'operation',
+          type: 'insert_text',
+          path: newPath,
+          offset: op1StartPoint - op2StartPoint,
+          text: op1.get('text'),
+          marks: op1.get('marks'),
+          data: op1.get('data'),
+        });
+      }
+    }
     return op1;
   },
 
