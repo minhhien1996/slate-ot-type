@@ -266,6 +266,8 @@ const Selector = {
           return Transform.transformSplitNodeInsText(op1, op2, side);
         case OperationTypes.REMOVE_TEXT:
           return Transform.transformSplitNodeRemoveText(op1, op2, side);
+        case OperationTypes.SPLIT_NODE:
+          return Transform.transformSplitNodeSplitNode(op1, op2, side);
         case OperationTypes.ADD_MARK:
         case OperationTypes.SET_MARK:
         case OperationTypes.REMOVE_MARK:
@@ -273,7 +275,6 @@ const Selector = {
         case OperationTypes.MOVE_NODE:
         case OperationTypes.REMOVE_NODE:
         case OperationTypes.SET_NODE:
-        case OperationTypes.SPLIT_NODE:
         case OperationTypes.SET_SELECTION:
         case OperationTypes.SET_VALUE:
         default:

@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { Operation, PathUtils, Mark } from 'slate';
+import { isNil } from 'lodash/fp';
 
 const nodeTransformHelper = (op1, op2) => {
   const newPath = PathUtils.transform(op1.get('path'), op2).get(0);
@@ -656,6 +657,57 @@ const Transform = {
   */
   transformSetNodeInsText: (op1, op2, side) => {
     console.log('transformSetNodeInsText');
+    return op1;
+  },
+
+  /**
+  * [split_node, split_node] transformation.
+  */
+  transformSplitNodeSplitNode: (op1, op2, side) => {
+    const pathCompare = PathUtils.compare(op1.get('path'), op2.get('path'));
+    console.log('transformSplitNodeSplitNode');
+    if (pathCompare === 0) {
+      if (!op1.get('target') && !op2.get('target')) {
+        const op1StartPoint = op1.get('position');
+        const op2StartPoint = op2.get('position');
+        if (
+          (op1StartPoint > op2StartPoint)
+          || ((op1StartPoint === op2StartPoint) && side === 'right')
+        ) {
+          const [nodeIdx, ...rest] = op1.get('path').toJS();
+          const newPath = [nodeIdx + 1, ...rest];
+          return Operation.create({
+            object: 'operation',
+            type: 'split_node',
+            path: PathUtils.transform(op1.get('path'), op2).get('1'),
+            position: op1StartPoint - op2StartPoint,
+            properties: op1.get('properties'),
+            target: op1.get('target'),
+            data: op1.get('data'),
+          });
+        }
+      }
+    }
+    if (PathUtils.isAbove(op1.get('path'), op2.get('path'))) {
+      const op1Target = op1.get('target');
+      const op2Target = op2.get('target');
+      if (!isNil(op1Target) && !isNil(op2Target)) {
+        if (
+          (op1Target > op2Target)
+          || ((op1Target === op2Target) && (side === 'right'))
+        ) {
+          return Operation.create({
+            object: 'operation',
+            type: 'split_node',
+            path: PathUtils.transform(op1.get('path'), op2).get('1'),
+            position: op1.get('position') + 1,
+            properties: op1.get('properties'),
+            target: op1Target - op2Target,
+            data: op1.get('data'),
+          });
+        }
+      }
+    }
     return op1;
   },
 
