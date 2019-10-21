@@ -1,5 +1,6 @@
+import { isEmpty, last } from 'lodash/fp';
 import { Selector } from './Selector';
-import { isArray } from './Utilitites';
+import { isArray, reverseSide } from './Utilitites';
 
 const { Value, Operation } = require('slate');
 const { isImmutable } = require('immutable');
@@ -37,37 +38,42 @@ const logOps = (message = '', op) => {
   console.log(message, toJSON(op));
 };
 
+const ensureArray = (singleOrListOp) => {
+  const list = isArray(singleOrListOp) ? singleOrListOp : [singleOrListOp];
+  // FIXME: instanceof maybe heavy?
+  return list.map(
+    (op) => (op instanceof Operation ? op : Operation.create(op)),
+  );
+};
+
 const transformOpLists = (op1, op2, side) => {
-  let transformedOps = [];
   logOps('transformOpLists op1', op1);
   logOps('transformOpLists op2', op2);
-  op1.forEach((op, i) => {
-    let leftOp = op instanceof Operation ? op : Operation.create(op);
-    logOps(`Left ops at step ${i}`, leftOp);
-    // eslint-disable-next-line
-    for (let j = 0; j < op2.length; j++) {
-      const rightOp = op2[j] instanceof Operation ? op2[j] : Operation.create(op2[j]);
-      leftOp = Selector.transform(leftOp, rightOp, side);
-      logOps('transform result', leftOp);
-      if (isArray(leftOp)) {
-        if (leftOp.length > 1) {
-          leftOp = transformOpLists(leftOp, op2.slice(j), side);
-          break;
-        } else {
-          // eslint-disable-next-line prefer-destructuring
-          leftOp = leftOp[0];
-        }
-      }
-    }
-
-    transformedOps = isArray(leftOp)
-      ? [...transformedOps, ...leftOp]
-      : [...transformedOps, leftOp];
-
-    logOps(`transformedOps ops at step ${i}`, transformedOps);
+  console.log('transformOpLists', side);
+  let top = ensureArray(op2);
+  const left = ensureArray(op1);
+  if (isEmpty(left) || isEmpty(top)) return left;
+  const right = [];
+  left.forEach((leftOp) => {
+    const middle = [];
+    const bottom = [];
+    logOps('left op ', leftOp);
+    top.forEach((topOp, j) => {
+      logOps('top op ', topOp);
+      const currentLeftOp = j === 0 ? leftOp : middle[j - 1];
+      logOps('current left op ', currentLeftOp);
+      const middleOp = Selector.transform(currentLeftOp, topOp, side);
+      const bottomOp = Selector.transform(topOp, currentLeftOp, reverseSide(side));
+      logOps('middle op', middleOp);
+      logOps('bottom op', bottomOp);
+      bottom.push(bottomOp);
+      middle.push(middleOp);
+    });
+    right.push(last(middle));
+    logOps('current right', right);
+    top = bottom;
   });
-
-  return transformedOps;
+  return right;
 };
 
 const slateType = {
@@ -112,8 +118,7 @@ const slateType = {
     },
     normalize(singleOrListOp) {
       logOps('normalize', singleOrListOp);
-      const opList = isArray(singleOrListOp) ? singleOrListOp : [singleOrListOp];
-      return opList.map((o) => Operation.create(o));
+      return ensureArray(singleOrListOp);
     },
     /**
      * TODO:

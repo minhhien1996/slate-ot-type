@@ -697,48 +697,62 @@ const Transform = {
   * [split_node, split_node] transformation.
   */
   transformSplitNodeSplitNode: (op1, op2, side) => {
-    const pathCompare = PathUtils.compare(op1.get('path'), op2.get('path'));
     console.log('transformSplitNodeSplitNode');
+    const pathCompare = PathUtils.compare(op1.get('path'), op2.get('path'));
     if (pathCompare === 0) {
-      if (!op1.get('target') && !op2.get('target')) {
-        const op1StartPoint = op1.get('position');
-        const op2StartPoint = op2.get('position');
-        if (
-          (op1StartPoint > op2StartPoint)
-          || ((op1StartPoint === op2StartPoint) && side === 'right')
-        ) {
-          const [nodeIdx, ...rest] = op1.get('path').toJS();
-          const newPath = [nodeIdx + 1, ...rest];
-          return Operation.create({
-            object: 'operation',
-            type: 'split_node',
-            path: PathUtils.transform(op1.get('path'), op2).get('1'),
-            position: op1StartPoint - op2StartPoint,
-            properties: op1.get('properties'),
-            target: op1.get('target'),
-            data: op1.get('data'),
-          });
-        }
+      const op1StartPoint = op1.get('position');
+      const op2StartPoint = op2.get('position');
+      if (
+        (op1StartPoint > op2StartPoint)
+        || ((op1StartPoint === op2StartPoint) && side === 'right')
+      ) {
+        return Operation.create({
+          object: 'operation',
+          type: 'split_node',
+          path: PathUtils.transform(op1.get('path'), op2).get('1'),
+          position: op1StartPoint - op2StartPoint,
+          properties: op1.get('properties'),
+          target: op1.get('target'),
+          data: op1.get('data'),
+        });
       }
     }
-    if (PathUtils.isAbove(op1.get('path'), op2.get('path'))) {
+    const op1AboveOp2 = PathUtils.isAbove(op1.get('path'), op2.get('path'));
+    if (op1AboveOp2) {
       const op1Target = op1.get('target');
+      const op2Position = op2.get('position');
+      if (
+        (op1Target > op2Position)
+        || ((op1Target === op2Position) && (side === 'right'))
+      ) {
+        return Operation.create({
+          object: 'operation',
+          type: 'split_node',
+          path: PathUtils.transform(op1.get('path'), op2).get('0'),
+          position: op1.get('position') + 1,
+          properties: op1.get('properties'),
+          target: op1Target - op2.get('position'),
+          data: op1.get('data'),
+        });
+      }
+    }
+    const op2AboveOp1 = PathUtils.isAbove(op2.get('path'), op1.get('path'));
+    if (op2AboveOp1) {
+      const op1Position = op1.get('position');
       const op2Target = op2.get('target');
-      if (!isNil(op1Target) && !isNil(op2Target)) {
-        if (
-          (op1Target > op2Target)
-          || ((op1Target === op2Target) && (side === 'right'))
-        ) {
-          return Operation.create({
-            object: 'operation',
-            type: 'split_node',
-            path: PathUtils.transform(op1.get('path'), op2).get('1'),
-            position: op1.get('position') + 1,
-            properties: op1.get('properties'),
-            target: op1Target - op2Target,
-            data: op1.get('data'),
-          });
-        }
+      if (
+        (op1Position > op2Target)
+        || ((op1Position === op2Target) && (side === 'right'))
+      ) {
+        return Operation.create({
+          object: 'operation',
+          type: 'split_node',
+          path: PathUtils.transform(op1.get('path'), op2).get('0'),
+          position: op1.get('position'),
+          properties: op1.get('properties'),
+          target: op1.get('target'),
+          data: op1.get('data'),
+        });
       }
     }
     return op1;

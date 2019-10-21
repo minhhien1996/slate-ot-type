@@ -37,6 +37,7 @@
   "homepage": "https://github.com/minhhien1996/slate-ot-type#readme",
   "dependencies": {
     "immutable": "^4.0.0-rc.12",
+    "lodash": "^4.17.15",
     "slate": "^0.47.8"
   }
 }
