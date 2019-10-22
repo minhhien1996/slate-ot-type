@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { Operation, PathUtils, Mark } from 'slate';
+import { isNil } from 'lodash/fp';
 
 const nodeTransformHelper = (op1, op2) => {
   const newPath = PathUtils.transform(op1.get('path'), op2).get(0);
@@ -558,6 +559,204 @@ const Transform = {
    * [merge_node, split_node] transformation.
    */
   transformMergeNodeSplitNode: (op1, op2, side) => op1,
+
+  /**
+    * [split_node, remove_text] transformation.
+    */
+  transformSplitNodeRemoveText: (op1, op2, side) => {
+    const pathCompare = PathUtils.compare(op1.get('path'), op2.get('path'));
+    console.log('transformSplitNodeRemoveText', pathCompare);
+    if (pathCompare === 0) {
+      const op1StartPoint = op1.get('position');
+      const op2StartPoint = op2.get('offset');
+      const op2Len = op2.get('text').length;
+      if (op1StartPoint >= op2StartPoint) {
+        return Operation.create({
+          object: 'operation',
+          type: 'split_node',
+          path: op1.get('path'),
+          position: op1StartPoint - op2Len,
+          properties: op1.get('properties'),
+          target: op1.get('target'),
+          data: op1.get('data'),
+        });
+      }
+    }
+    return op1;
+  },
+
+  /**
+   * [remove_text, split_node] transformation.
+   */
+  transformRemoveTextSplitNode: (op1, op2, side) => op1,
+
+  /**
+  * [insert_text, split_node] transformation.
+  */
+  transformInsTextSplitNode: (op1, op2, side) => {
+    const pathCompare = PathUtils.compare(op1.get('path'), op2.get('path'));
+    console.log('transformInsTextSplitNode', pathCompare);
+    if (pathCompare === 0) {
+      const op1StartPoint = op1.get('offset');
+      const op2StartPoint = op2.get('position');
+      if (op1StartPoint >= op2StartPoint) {
+        // TODO: this transformation here is for only nested split_node for new line
+        const [nodeIdx, ...rest] = op1.get('path').toJS();
+        const newPath = [nodeIdx + 1, ...rest];
+        return Operation.create({
+          object: 'operation',
+          type: 'insert_text',
+          path: newPath,
+          offset: op1StartPoint - op2StartPoint,
+          text: op1.get('text'),
+          marks: op1.get('marks'),
+          data: op1.get('data'),
+        });
+      }
+    }
+    return op1;
+  },
+
+  /**
+  * [split_node, insert_text] transformation.
+  */
+  transformSplitNodeInsText: (op1, op2, side) => {
+    const pathCompare = PathUtils.compare(op1.get('path'), op2.get('path'));
+    console.log('transformSplitNodeInsText', pathCompare);
+    if (pathCompare === 0) {
+      const op1StartPoint = op1.get('position');
+      const op2StartPoint = op2.get('offset');
+      const op2Len = op2.get('text').length;
+      console.log('op1StartPoint', op1StartPoint, 'op2StartPoint', op2StartPoint, 'op2 text length', op2Len);
+      if (op1StartPoint >= op2StartPoint) {
+        return Operation.create({
+          object: 'operation',
+          type: 'split_node',
+          path: op1.get('path'),
+          position: op1StartPoint + op2Len,
+          properties: op1.get('properties'),
+          target: op1.get('target'),
+          data: op1.get('data'),
+        });
+      }
+    }
+
+    return op1;
+  },
+
+  /**
+ * [insert_text, set_node] transformation.
+ */
+  transformInsTextSetNode: (op1, op2, side) => {
+    console.log('transformInsTextSetNode');
+    return op1;
+  },
+
+  /**
+  * [set_node, insert_text] transformation.
+  */
+  transformSetNodeInsText: (op1, op2, side) => {
+    console.log('transformSetNodeInsText');
+    return op1;
+  },
+
+  /**
+  * [set_node, split_node] transformation.
+  */
+  transformSetNodeSplitNode: (op1, op2, side) => {
+    if (PathUtils.compare(op1.get('path'), op2.get('path'))) {
+      Operation.create({
+        object: 'operation',
+        type: 'set_node',
+        path: PathUtils.transform(op1.get('path'), op2).get('0'),
+        newProperties: op1.get('newProperties'),
+        properties: op1.get('properties'),
+        data: op1.get('data'),
+      });
+    }
+    return op1;
+  },
+
+  /**
+  * [split_node, set_node] transformation.
+  */
+  transformSplitNodeSetNode: (op1, op2, side) => {
+    console.log('transformSplitNodeSetNode');
+    return op1;
+  },
+
+  /**
+  * [set_node, set_node] transformation.
+  */
+  transformSetNodeSetNode: (op1, op2, side) => {
+    console.log('transformSetNodeSetNode');
+    return op1;
+  },
+
+  /**
+  * [split_node, split_node] transformation.
+  */
+  transformSplitNodeSplitNode: (op1, op2, side) => {
+    console.log('transformSplitNodeSplitNode');
+    const pathCompare = PathUtils.compare(op1.get('path'), op2.get('path'));
+    if (pathCompare === 0) {
+      const op1StartPoint = op1.get('position');
+      const op2StartPoint = op2.get('position');
+      if (
+        (op1StartPoint > op2StartPoint)
+        || ((op1StartPoint === op2StartPoint) && side === 'right')
+      ) {
+        return Operation.create({
+          object: 'operation',
+          type: 'split_node',
+          path: PathUtils.transform(op1.get('path'), op2).get('1'),
+          position: op1StartPoint - op2StartPoint,
+          properties: op1.get('properties'),
+          target: op1.get('target'),
+          data: op1.get('data'),
+        });
+      }
+    }
+    const op1AboveOp2 = PathUtils.isAbove(op1.get('path'), op2.get('path'));
+    if (op1AboveOp2) {
+      const op1Target = op1.get('target');
+      const op2Position = op2.get('position');
+      if (
+        (op1Target > op2Position)
+        || ((op1Target === op2Position) && (side === 'right'))
+      ) {
+        return Operation.create({
+          object: 'operation',
+          type: 'split_node',
+          path: PathUtils.transform(op1.get('path'), op2).get('0'),
+          position: op1.get('position') + 1,
+          properties: op1.get('properties'),
+          target: op1Target - op2.get('position'),
+          data: op1.get('data'),
+        });
+      }
+    }
+    const op2AboveOp1 = PathUtils.isAbove(op2.get('path'), op1.get('path'));
+    if (op2AboveOp1) {
+      const op1Position = op1.get('position');
+      const op2Target = op2.get('target');
+      if (
+        (op1Position > op2Target)
+        || ((op1Position === op2Target) && (side === 'right'))
+      ) {
+        return Operation.create({
+          object: 'operation',
+          type: 'split_node',
+          path: PathUtils.transform(op1.get('path'), op2).get('0'),
+          position: op1.get('position'),
+          properties: op1.get('properties'),
+          target: op1.get('target'),
+          data: op1.get('data'),
+        });
+      }
+    }
+    return op1;
+  },
 
   //   insert_text: ['path', 'offset', 'text', 'marks', 'data'],
   //   remove_text: ['path', 'offset', 'text', 'marks', 'data'],

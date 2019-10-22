@@ -24,17 +24,13 @@ const OperationTypes = {
 };
 
 const Selector = {
-  transform: (op1, op2, side) => {
-    const op = Selector._transform(op1, op2, side);
-    return isArray(op) ? op : [op];
-  },
   /**
    *
    * @param {Operator} op1
    * @param {Operator} op2
    * @param {string} side
    */
-  _transform: (op1, op2, side) => {
+  transform: (op1, op2, side) => {
     if (op1.type === OperationTypes.INSERT_TEXT) {
       switch (op2.type) {
         case OperationTypes.INSERT_TEXT:
@@ -76,13 +72,14 @@ const Selector = {
           return Transform.transformRemoveTextInsertNode(op1, op2, side);
         case OperationTypes.REMOVE_NODE:
           return Transform.transformRemoveTextRemoveNode(op1, op2, side);
+        case OperationTypes.SPLIT_NODE:
+          return Transform.transformRemoveTextSplitNode(op1, op2, side);
         case OperationTypes.ADD_MARK:
         case OperationTypes.SET_MARK:
         case OperationTypes.REMOVE_MARK:
         case OperationTypes.MERGE_NODE:
         case OperationTypes.MOVE_NODE:
         case OperationTypes.SET_NODE:
-        case OperationTypes.SPLIT_NODE:
         case OperationTypes.SET_SELECTION:
         case OperationTypes.SET_VALUE:
         default:
@@ -241,6 +238,11 @@ const Selector = {
     } else if (op1.type === OperationTypes.SET_NODE) {
       switch (op2.type) {
         case OperationTypes.INSERT_TEXT:
+          return Transform.transformSetNodeInsText(op1, op2, side);
+        case OperationTypes.SPLIT_NODE:
+          return Transform.transformSetNodeSplitNode(op1, op2, side);
+        case OperationTypes.SET_NODE:
+          return Transform.transformSetNodeSetNode(op1, op2, side);
         case OperationTypes.REMOVE_TEXT:
         case OperationTypes.ADD_MARK:
         case OperationTypes.SET_MARK:
@@ -249,8 +251,6 @@ const Selector = {
         case OperationTypes.MERGE_NODE:
         case OperationTypes.MOVE_NODE:
         case OperationTypes.REMOVE_NODE:
-        case OperationTypes.SET_NODE:
-        case OperationTypes.SPLIT_NODE:
         case OperationTypes.SET_SELECTION:
         case OperationTypes.SET_VALUE:
         default:
@@ -261,15 +261,19 @@ const Selector = {
         case OperationTypes.MERGE_NODE:
           return Transform.transformSplitNodeMergeNode(op1, op2, side);
         case OperationTypes.INSERT_TEXT:
+          return Transform.transformSplitNodeInsText(op1, op2, side);
         case OperationTypes.REMOVE_TEXT:
+          return Transform.transformSplitNodeRemoveText(op1, op2, side);
+        case OperationTypes.SPLIT_NODE:
+          return Transform.transformSplitNodeSplitNode(op1, op2, side);
+        case OperationTypes.SET_NODE:
+          return Transform.transformSplitNodeSetNode(op1, op2, side);
         case OperationTypes.ADD_MARK:
         case OperationTypes.SET_MARK:
         case OperationTypes.REMOVE_MARK:
         case OperationTypes.INSERT_NODE:
         case OperationTypes.MOVE_NODE:
         case OperationTypes.REMOVE_NODE:
-        case OperationTypes.SET_NODE:
-        case OperationTypes.SPLIT_NODE:
         case OperationTypes.SET_SELECTION:
         case OperationTypes.SET_VALUE:
         default:

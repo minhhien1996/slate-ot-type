@@ -1,5 +1,6 @@
+import { isEmpty, last } from 'lodash/fp';
 import { Selector } from './Selector';
-import { isArray } from './Utilitites';
+import { isArray, reverseSide } from './Utilitites';
 
 const { Value, Operation } = require('slate');
 const { isImmutable } = require('immutable');
@@ -22,6 +23,59 @@ function deserializedApply(oldValue, op) {
   return value;
 }
 
+const toJSON = (op) => {
+  if (op instanceof Operation) {
+    return op.toJS();
+  }
+  return op;
+};
+
+const logOps = (message = '', op) => {
+  if (isArray(op)) {
+    console.log(message, op.map(toJSON));
+    return;
+  }
+  console.log(message, toJSON(op));
+};
+
+const ensureArray = (singleOrListOp) => {
+  const list = isArray(singleOrListOp) ? singleOrListOp : [singleOrListOp];
+  // FIXME: instanceof maybe heavy?
+  return list.map(
+    (op) => (op instanceof Operation ? op : Operation.create(op)),
+  );
+};
+
+const transformOpLists = (op1, op2, side) => {
+  logOps('transformOpLists op1', op1);
+  logOps('transformOpLists op2', op2);
+  console.log('transformOpLists', side);
+  let top = ensureArray(op2);
+  const left = ensureArray(op1);
+  if (isEmpty(left) || isEmpty(top)) return left;
+  const right = [];
+  left.forEach((leftOp) => {
+    const middle = [];
+    const bottom = [];
+    logOps('left op ', leftOp);
+    top.forEach((topOp, j) => {
+      logOps('top op ', topOp);
+      const currentLeftOp = j === 0 ? leftOp : middle[j - 1];
+      logOps('current left op ', currentLeftOp);
+      const middleOp = Selector.transform(currentLeftOp, topOp, side);
+      const bottomOp = Selector.transform(topOp, currentLeftOp, reverseSide(side));
+      logOps('middle op', middleOp);
+      logOps('bottom op', bottomOp);
+      bottom.push(bottomOp);
+      middle.push(middleOp);
+    });
+    right.push(last(middle));
+    logOps('current right', right);
+    top = bottom;
+  });
+  return right;
+};
+
 const slateType = {
   Value,
   Operation,
@@ -41,13 +95,17 @@ const slateType = {
       return Value.create(data);
     },
     apply(snapshot, op) {
+      logOps('apply ops', op);
       if (isImmutable(snapshot)) {
         return deserializedApply(snapshot, op);
       }
       return serializedApply(snapshot, op);
     },
     transform(op1, op2, side) {
-      return slateType.transformOpLists(op1, op2, side);
+      console.log('will transform ops', side);
+      logOps(op1);
+      logOps(op2);
+      return transformOpLists(op1, op2, side);
     },
     serialize(value) {
       if (!isImmutable(value)) {
@@ -59,8 +117,8 @@ const slateType = {
       return Value.create(data);
     },
     normalize(singleOrListOp) {
-      const opList = isArray(singleOrListOp) ? singleOrListOp : [singleOrListOp];
-      return opList.map((o) => Operation.create(o));
+      logOps('normalize', singleOrListOp);
+      return ensureArray(singleOrListOp);
     },
     /**
      * TODO:
@@ -73,26 +131,7 @@ const slateType = {
       }
      */
   },
-  transformOpLists(op1, op2, side) {
-    let transformedOps = [];
-    for (let i = 0; i < op1.length; i += 1) {
-      let leftOp = op1[i];
-      for (let j = 0; j < op2.length; j += 1) {
-        const rightOp = op2[j];
-        leftOp = Selector.transform(leftOp, rightOp, side);
-        if (isArray(leftOp) && leftOp.length > 1) {
-          leftOp = slateType.transformOpLists(leftOp, op2.slice(j), side);
-          break;
-        }
-      }
-
-      transformedOps = isArray(leftOp)
-        ? [...transformedOps, ...leftOp]
-        : [...transformedOps, leftOp];
-    }
-
-    return transformedOps;
-  },
+  transformOpLists,
 };
 
 export default slateType;
